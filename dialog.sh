@@ -9,12 +9,12 @@ MENU="System settings:"
 
 DIALOG_CANCEL=1
 DIALOG_ESC=255
+
 display_result() {
 	dialog --title "$1" \
 		--no-collapse \
 		--msgbox "$result" 0 0
 }
-
 OPTIONS=(1 "Live"
          2 "Dev"
          3 "Test")
@@ -56,24 +56,47 @@ while true; do
             	CHOICE_HEIGHT=4
 		TITLE="Live"
 		MENU="Select:"
-	    	option1=(1 "input"
-		     	 2 "show interface"
+	    	option1=(1 "Configuration"
+		     	 2 "Show Interface"
 		      	 3 "option 3"
 		     	 4 "option 4")
 
-	    	s1=$(dialog  --title "$TITLE" \
+	    	s1=$(dialog    	--title "$TITLE" \
 			 	--menu "$MENU" \
 				$HEIGHT $WIDTH $CHOICE_HEIGHT \
 				"${option1[@]}" \
 				2>&1 >/dev/tty)
 		case $s1 in
 			1)
-				dialog --inputbox "Enter your IP: " 10 30 192.168.1.x
-				3>&2
+				interface=$(ifconfig -a | grep ens | awk '{print $1 " "$4 $5}')
+				dialog --title "Enthernet Interfaces" \
+					--menu "Select: " 0 0 0 \
+				 	${interface} \
+
+				address=""
+				netmask=""
+				network=""
+				gateway=""
+				broadcast=""
+				#dialog --inputbox "Enter your IP: " 10 30 192.168.1.x
+				exec 3>&1
+				VALUES=$(dialog --ok-label "Submit" \
+						  --backtitle "Configuration" \
+						  --title "Provide the values for static IP configuration" \
+						  --form "" \
+							0 50 5 \
+				"address"     1 1	"$address" 	1 10 15 0 \
+				"netmask:"    2 1	"$netmask"  	2 10 15 0 \
+				"network:"    3 1	"$network"  	3 10 15 0 \
+				"gateway:"    4 1	"$gateway" 	4 10 15 0 \
+				"broadcast"   5 1	"$broadcast"	5 10 15 0 \
+				2>&1 1>&3)
+				exec 3>&-
+				echo "$VALUES" >> /home/huangvinh/output.txt
 				;;
 			2)
 				result=$(ifconfig -a)
-				display_result "interfaces"
+				display_result "Interfaces"
 		esac
            	;;
 	2)
@@ -97,7 +120,9 @@ while true; do
 	    		1)
 	 	 	 dialog --title "My Question" --yesno "Do you want install this program?" 10 40;;
 			2)
-		 	 dialog --title "My Message" --msgbox "no information" 10 40;;
+		 	 #dialog --title "My Message" --msgbox "no information" 10 40;;
+			 result=$(echo "Hostname: $HOSTNAME"; uptime)
+			 display_result "System Information"
 	    	esac
 	        ;;
 	3)
